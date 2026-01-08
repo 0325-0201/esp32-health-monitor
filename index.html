@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ESP32 Health Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+
+<body style="font-family:Arial; text-align:center;">
+  <h1>ESP32 Health Monitoring</h1>
+
+  <p>Body Temp: <b id="body">--</b> °C</p>
+  <p>Ambient Temp: <b id="ambient">--</b> °C</p>
+  <p>Humidity: <b id="hum">--</b> %</p>
+  <p>Heart Rate: <b id="bpm">--</b> BPM</p>
+
+<script>
+  const firebaseConfig = {
+    // const firebaseConfig = {
+  apiKey: "AIzaSyCrVzOjeIfm0z-P1KigiaHNoa8KaTGi8i8",
+  authDomain: "esp32-health-monitoring-d453a.firebaseapp.com",
+  databaseURL: "https://esp32-health-monitoring-d453a-default-rtdb.firebaseio.com",
+  projectId: "esp32-health-monitoring-d453a",
+  storageBucket: "esp32-health-monitoring-d453a.firebasestorage.app",
+  messagingSenderId: "775307589628",
+  appId: "1:775307589628:web:2c9df5a252c52e6eace479",
+  measurementId: "G-R0S9J51R8R"
+};
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  db.ref("health").on("value", snap => {
+    if (snap.exists()) {
+      const d = snap.val();
+      document.getElementById("body").innerText = d.bodyTemp;
+      document.getElementById("ambient").innerText = d.ambientTemp;
+      document.getElementById("hum").innerText = d.humidity;
+      document.getElementById("bpm").innerText = d.bpm;
+    }
+  });
+</script>
+</body>
+</html>
