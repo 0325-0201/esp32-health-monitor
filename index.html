@@ -83,116 +83,150 @@
 </head>
 <body>
 
-  <h1>ESP32 Health Monitoring</h1>
+<h1>ESP32 Health Monitoring</h1>
 
-  <div class="container">
-    <div class="cards">
-      <div class="card">
-        <div class="label">Body Temperature</div>
-        <div class="value"><span id="bodyTemp">--</span><span class="unit"> °C</span></div>
-      </div>
+<div class="container">
 
-      <div class="card">
-        <div class="label">Ambient Temperature</div>
-        <div class="value"><span id="ambientTemp">--</span><span class="unit"> °C</span></div>
-      </div>
-
-      <div class="card">
-        <div class="label">Humidity</div>
-        <div class="value"><span id="humidity">--</span><span class="unit"> %</span></div>
-      </div>
-
-      <div class="card">
-        <div class="label">Heart Rate</div>
-        <div class="value"><span id="bpm">--</span><span class="unit"> BPM</span></div>
-      </div>
+  <div class="cards">
+    <div class="card">
+      <div class="label">Body Temperature</div>
+      <div class="value"><span id="bodyTemp">--</span><span class="unit"> °C</span></div>
     </div>
 
-    <div class="chart-container">
-      <canvas id="healthChart"></canvas>
+    <div class="card">
+      <div class="label">Ambient Temperature</div>
+      <div class="value"><span id="ambientTemp">--</span><span class="unit"> °C</span></div>
+    </div>
+
+    <div class="card">
+      <div class="label">Humidity</div>
+      <div class="value"><span id="humidity">--</span><span class="unit"> %</span></div>
+    </div>
+
+    <div class="card">
+      <div class="label">Heart Rate</div>
+      <div class="value"><span id="bpm">--</span><span class="unit"> BPM</span></div>
     </div>
   </div>
 
-  <footer>
-    Real-Time ESP32 Health Monitoring Dashboard
-  </footer>
+  <div class="chart-container">
+    <canvas id="healthChart"></canvas>
+  </div>
 
-  <script>
-    function random(min, max) {
-      return Math.random() * (max - min) + min;
-    }
+</div>
 
-    const bodyTempEl = document.getElementById("bodyTemp");
-    const ambientTempEl = document.getElementById("ambientTemp");
-    const humidityEl = document.getElementById("humidity");
-    const bpmEl = document.getElementById("bpm");
+<footer>
+  Real-Time ESP32 Health Monitoring Dashboard
+</footer>
 
-    const ctx = document.getElementById("healthChart").getContext("2d");
+<script>
+  function random(min, max) {
+    return Math.random() * (max - min) + min;
+  }
 
-    const healthChart = new Chart(ctx, {
-      type: "line",
-      data: {
-        labels: [],
-        datasets: [
-          {
-            label: "Body Temp (°C)",
-            borderColor: "#ff7675",
-            data: [],
-            tension: 0.4
-          },
-          {
-            label: "Heart Rate (BPM)",
-            borderColor: "#74b9ff",
-            data: [],
-            tension: 0.4
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: {
-            labels: { color: "white" }
-          }
+  const bodyTempEl = document.getElementById("bodyTemp");
+  const ambientTempEl = document.getElementById("ambientTemp");
+  const humidityEl = document.getElementById("humidity");
+  const bpmEl = document.getElementById("bpm");
+
+  let bodyTemp = 36.8;
+  let ambientTemp = 27.0;
+  let humidity = 60.0;
+  let bpm = 80;
+
+  const ctx = document.getElementById("healthChart").getContext("2d");
+
+  const healthChart = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: [],
+      datasets: [
+        {
+          label: "Body Temp (°C)",
+          borderColor: "#ff7675",
+          data: [],
+          tension: 0.4
         },
-        scales: {
-          x: {
-            ticks: { color: "white" }
-          },
-          y: {
-            ticks: { color: "white" }
-          }
+        {
+          label: "Heart Rate (BPM)",
+          borderColor: "#74b9ff",
+          data: [],
+          tension: 0.4
+        },
+        {
+          label: "Ambient Temp (°C)",
+          borderColor: "#ffeaa7",
+          data: [],
+          tension: 0.4
+        },
+        {
+          label: "Humidity (%)",
+          borderColor: "#55efc4",
+          data: [],
+          tension: 0.4
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          labels: { color: "white" }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: "white" }
+        },
+        y: {
+          ticks: { color: "white" }
         }
       }
-    });
+    }
+  });
 
-    function updateData() {
-      const bodyTemp = random(36.5, 37.5).toFixed(1);
-      const ambientTemp = random(25, 30).toFixed(1);
-      const humidity = random(50, 70).toFixed(1);
-      const bpm = Math.floor(random(70, 100));
+  function addChartPoint() {
+    const time = new Date().toLocaleTimeString();
 
-      bodyTempEl.innerText = bodyTemp;
-      ambientTempEl.innerText = ambientTemp;
-      humidityEl.innerText = humidity;
-      bpmEl.innerText = bpm;
+    healthChart.data.labels.push(time);
+    healthChart.data.datasets[0].data.push(bodyTemp.toFixed(1));
+    healthChart.data.datasets[1].data.push(bpm);
+    healthChart.data.datasets[2].data.push(ambientTemp.toFixed(1));
+    healthChart.data.datasets[3].data.push(humidity.toFixed(1));
 
-      const time = new Date().toLocaleTimeString();
-
-      healthChart.data.labels.push(time);
-      healthChart.data.datasets[0].data.push(bodyTemp);
-      healthChart.data.datasets[1].data.push(bpm);
-
-      if (healthChart.data.labels.length > 10) {
-        healthChart.data.labels.shift();
-        healthChart.data.datasets.forEach(ds => ds.data.shift());
-      }
-
-      healthChart.update();
+    if (healthChart.data.labels.length > 10) {
+      healthChart.data.labels.shift();
+      healthChart.data.datasets.forEach(ds => ds.data.shift());
     }
 
-    setInterval(updateData, 2000);
-  </script>
+    healthChart.update();
+  }
+
+  // ❤️ Heart rate updates every 2s
+  setInterval(() => {
+    bpm = Math.floor(random(70, 100));
+    bpmEl.innerText = bpm;
+    addChartPoint();
+  }, 2000);
+
+  // 🌡 Body temperature every 4s
+  setInterval(() => {
+    bodyTemp += random(-0.1, 0.1);
+    bodyTempEl.innerText = bodyTemp.toFixed(1);
+  }, 4000);
+
+  // 🌡 Ambient temperature every 5s
+  setInterval(() => {
+    ambientTemp += random(-0.2, 0.2);
+    ambientTempEl.innerText = ambientTemp.toFixed(1);
+  }, 5000);
+
+  // 💧 Humidity every 6s
+  setInterval(() => {
+    humidity += random(-1, 1);
+    humidityEl.innerText = humidity.toFixed(1);
+  }, 6000);
+</script>
 
 </body>
 </html>
