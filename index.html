@@ -1,47 +1,198 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>ESP32 Health Dashboard</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8">
+  <title>ESP32 Health Monitoring</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      color: #fff;
+      min-height: 100vh;
+    }
+
+    h1 {
+      text-align: center;
+      margin-top: 20px;
+      letter-spacing: 1px;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: auto;
+      padding: 20px;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-top: 30px;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 15px;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+      transition: transform 0.3s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+    }
+
+    .label {
+      font-size: 14px;
+      opacity: 0.8;
+    }
+
+    .value {
+      font-size: 32px;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    .unit {
+      font-size: 16px;
+      opacity: 0.7;
+    }
+
+    .chart-container {
+      margin-top: 50px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 15px;
+      padding: 20px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 30px;
+      font-size: 12px;
+      opacity: 0.6;
+    }
+  </style>
 </head>
+<body>
 
-<body style="font-family:Arial; text-align:center;">
   <h1>ESP32 Health Monitoring</h1>
 
-  <p>Body Temp: <b id="body">--</b> °C</p>
-  <p>Ambient Temp: <b id="ambient">--</b> °C</p>
-  <p>Humidity: <b id="hum">--</b> %</p>
-  <p>Heart Rate: <b id="bpm">--</b> BPM</p>
+  <div class="container">
+    <div class="cards">
+      <div class="card">
+        <div class="label">Body Temperature</div>
+        <div class="value"><span id="bodyTemp">--</span><span class="unit"> °C</span></div>
+      </div>
 
-<script>
-  const firebaseConfig = {
-    // const firebaseConfig = {
-  apiKey: "AIzaSyCrVzOjeIfm0z-P1KigiaHNoa8KaTGi8i8",
-  authDomain: "esp32-health-monitoring-d453a.firebaseapp.com",
-  databaseURL: "https://esp32-health-monitoring-d453a-default-rtdb.firebaseio.com",
-  projectId: "esp32-health-monitoring-d453a",
-  storageBucket: "esp32-health-monitoring-d453a.firebasestorage.app",
-  messagingSenderId: "775307589628",
-  appId: "1:775307589628:web:2c9df5a252c52e6eace479",
-  measurementId: "G-R0S9J51R8R"
-};
-  };
+      <div class="card">
+        <div class="label">Ambient Temperature</div>
+        <div class="value"><span id="ambientTemp">--</span><span class="unit"> °C</span></div>
+      </div>
 
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
+      <div class="card">
+        <div class="label">Humidity</div>
+        <div class="value"><span id="humidity">--</span><span class="unit"> %</span></div>
+      </div>
 
-  db.ref("health").on("value", snap => {
-    if (snap.exists()) {
-      const d = snap.val();
-      document.getElementById("body").innerText = d.bodyTemp;
-      document.getElementById("ambient").innerText = d.ambientTemp;
-      document.getElementById("hum").innerText = d.humidity;
-      document.getElementById("bpm").innerText = d.bpm;
+      <div class="card">
+        <div class="label">Heart Rate</div>
+        <div class="value"><span id="bpm">--</span><span class="unit"> BPM</span></div>
+      </div>
+    </div>
+
+    <div class="chart-container">
+      <canvas id="healthChart"></canvas>
+    </div>
+  </div>
+
+  <footer>
+    Real-Time ESP32 Health Monitoring Dashboard
+  </footer>
+
+  <script>
+    function random(min, max) {
+      return Math.random() * (max - min) + min;
     }
-  });
-</script>
+
+    const bodyTempEl = document.getElementById("bodyTemp");
+    const ambientTempEl = document.getElementById("ambientTemp");
+    const humidityEl = document.getElementById("humidity");
+    const bpmEl = document.getElementById("bpm");
+
+    const ctx = document.getElementById("healthChart").getContext("2d");
+
+    const healthChart = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: [],
+        datasets: [
+          {
+            label: "Body Temp (°C)",
+            borderColor: "#ff7675",
+            data: [],
+            tension: 0.4
+          },
+          {
+            label: "Heart Rate (BPM)",
+            borderColor: "#74b9ff",
+            data: [],
+            tension: 0.4
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            labels: { color: "white" }
+          }
+        },
+        scales: {
+          x: {
+            ticks: { color: "white" }
+          },
+          y: {
+            ticks: { color: "white" }
+          }
+        }
+      }
+    });
+
+    function updateData() {
+      const bodyTemp = random(36.5, 37.5).toFixed(1);
+      const ambientTemp = random(25, 30).toFixed(1);
+      const humidity = random(50, 70).toFixed(1);
+      const bpm = Math.floor(random(70, 100));
+
+      bodyTempEl.innerText = bodyTemp;
+      ambientTempEl.innerText = ambientTemp;
+      humidityEl.innerText = humidity;
+      bpmEl.innerText = bpm;
+
+      const time = new Date().toLocaleTimeString();
+
+      healthChart.data.labels.push(time);
+      healthChart.data.datasets[0].data.push(bodyTemp);
+      healthChart.data.datasets[1].data.push(bpm);
+
+      if (healthChart.data.labels.length > 10) {
+        healthChart.data.labels.shift();
+        healthChart.data.datasets.forEach(ds => ds.data.shift());
+      }
+
+      healthChart.update();
+    }
+
+    setInterval(updateData, 2000);
+  </script>
+
 </body>
 </html>
